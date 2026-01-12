@@ -31,8 +31,20 @@
             kab: { b: '#420', c: '#f50', i: '💣', h: 'КАБ / ФАБ', d: 'УГРОЗА АВИАЦИОННЫХ БОМБ' },
             artillery: { b: '#311', c: '#f33', i: '💥', h: 'ОБСТРЕЛ', d: 'УГРОЗА АРТИЛЛЕРИЙСКОГО ОБСТРЕЛА' },
             drg: { b: '#111', c: '#fff', i: '🥷', h: 'ДИВЕРСАНТЫ', d: 'ПОВЫШЕННАЯ АКТИВНОСТЬ ДРГ' },
-            street_combat: { b: '#000', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'ВНИМАНИЕ! БОЕВЫЕ ДЕЙСТВИЯ В ГОРОДЕ' }
+            street_combat: { b: '#200', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'ВНИМАНИЕ! БОЕВЫЕ ДЕЙСТВИЯ В ГОРОДЕ' }
         };
+
+        db.on('value', (s) => {
+            const mode = s.val() || 'safe';
+            // Если ключ в базе совпадает с ключом в объекте, всё будет работать
+            const cfg = scenarios[mode] || scenarios.safe; 
+            
+            document.body.style.backgroundColor = cfg.b;
+            document.body.style.color = cfg.c;
+            document.getElementById('icon').innerText = cfg.i;
+            document.getElementById('title').innerText = cfg.h;
+            document.getElementById('desc').innerText = cfg.d;
+        });
 
         db.on('value', (s) => {
             const mode = s.val() || 'safe';
