@@ -2,49 +2,43 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ЦУП ЛИДЕРА | RCD</title>
+    <title>ЦУП ЛИДЕРА | КРАСНЫЙ КРИСТАЛЛ</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background:#0a0a0a; color:#eee; font-family: sans-serif; padding: 15px; text-align:center; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn { padding: 20px 10px; font-size: 14px; font-weight: bold; border: 1px solid #444; cursor: pointer; border-radius: 4px; color: #fff; text-transform: uppercase; }
-        .btn-safe { background: #050; grid-column: span 2; font-size: 18px; border-color: #0f0; }
-        .btn-danger { background: #600; }
-        .btn-warning { background: #740; }
-        .btn-special { background: #333; }
+        body { background:#0a0a0a; color:#eee; font-family: sans-serif; padding:10px; text-align:center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 500px; margin: 20px auto; }
+        .btn { padding:20px 10px; font-weight:bold; cursor:pointer; border-radius:4px; border:1px solid #444; color:#fff; text-transform:uppercase; }
+        .btn-safe { background:#050; grid-column: span 2; border-color:#0f0; font-size:18px; }
+        .btn-danger { background:#600; }
+        .btn-warn { background:#740; }
+        .btn-spec { background:#333; }
     </style>
 </head>
 <body id="admin-body" style="display:none;">
-    <h3 style="color:#0f0">ГЛАВНЫЙ ПУЛЬТ: ЮЖНАЯ ЗАГОРИЯ</h3>
+    <h2 style="color:#0f0">ЦУП: ГЛАВНЫЙ ТЕРМИНАЛ</h2>
     <div class="grid">
-        <button class="btn btn-safe" onclick="send('safe')">🛡️ ОТБОЙ</button>
-        <button class="btn btn-danger" onclick="send('ballistic')">🚀 БАЛЛИСТИКА</button>
-        <button class="btn btn-danger" onclick="send('cruise')">🛫 КР. РАКЕТЫ</button>
-        <button class="btn btn-warning" onclick="send('uav')">🛸 БпЛА</button>
-        <button class="btn btn-warning" onclick="send('kab')">💣 КАБ / ФАБ</button>
-        <button class="btn btn-danger" onclick="send('artillery')">💥 ОБСТРЕЛ</button>
-        <button class="btn btn-special" onclick="send('drg')">🥷 ДРГ</button>
-        <button class="btn btn-special" onclick="send('street_combat')" style="grid-column: span 2;">☠️ УЛИЧНЫЕ БОИ</button>
+        <button class="btn btn-safe" onclick="set('safe')">🛡️ ОТБОЙ</button>
+        <button class="btn btn-danger" onclick="set('ballistic')">🚀 БАЛЛИСТИКА</button>
+        <button class="btn btn-danger" onclick="set('cruise')">🛫 КР. РАКЕТЫ</button>
+        <button class="btn btn-warn" onclick="set('uav')">🛸 БпЛА</button>
+        <button class="btn btn-warn" onclick="set('kab')">💣 КАБ / ФАБ</button>
+        <button class="btn btn-danger" onclick="set('artillery')">💥 ОБСТРЕЛ</button>
+        <button class="btn btn-spec" onclick="set('drg')">🥷 ДРГ</button>
+        <button class="btn btn-spec" onclick="set('street_combat')" style="grid-column: span 2;">☠️ УЛИЧНЫЕ БОИ</button>
     </div>
 
     <script>
         const pass = prompt("КОД ЛИДЕРА:");
-        if(pass === "ЮТРКЧАГБ") { 
+        if(pass === "ЮТРКЧАГБ") {
             document.getElementById('admin-body').style.display = 'block';
-        } else {
-            window.location.href = "index.html";
-        }
+        } else { window.location.href = "about:blank"; }
 
-        const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
-        firebase.initializeApp(config);
+        firebase.initializeApp({ databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" });
         const db = firebase.database().ref('current_threat');
 
-        function send(type) {
-            db.set(type)
-                .then(() => { console.log("Статус отправлен: " + type); })
-                .catch((err) => { alert("ОШИБКА СВЯЗИ: " + err); });
+        function set(mode) {
+            db.set(mode).then(() => console.log("Отправлено: " + mode));
         }
     </script>
 </body>
