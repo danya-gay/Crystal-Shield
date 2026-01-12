@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RCD | СИСТЕМА ЩИТ</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body { margin: 0; font-family: 'Courier New', monospace; background: #000; transition: 0.5s; overflow: hidden; color: #0f0; user-select: none; }
+        #display { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+        .icon { font-size: 120px; margin-bottom: 20px; transition: transform 0.3s; }
+        .icon:active { transform: scale(0.9); }
+        .title { font-size: 32px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+        #desc { font-size: 18px; opacity: 0.8; margin-top: 15px; max-width: 80%; }
+        
+        /* Скрытая панель управления */
+        #admin-panel { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: rgba(0,0,0,0.95); display: none; 
+            flex-wrap: wrap; justify-content: center; 
+            padding: 20px; border-top: 2px solid #333; z-index: 100;
+        }
+        .btn { padding: 15px 20px; margin: 5px; border: 1px solid #555; background: #222; color: #fff; font-weight: bold; cursor: pointer; }
+        .btn-danger { border-color: #f00; color: #f00; }
+        .close-btn { width: 100%; margin-bottom: 10px; background: #444; color: white; }
+    </style>
+</head>
+<body>
+
+<div id="display" onclick="checkAccess()">
+    <div id="icon" class="icon">🛡️</div>
+    <div id="title" class="title">ПОДКЛЮЧЕНИЕ...</div>
+    <div id="desc">СИСТЕМА ОКТАГОН-ID АКТИВИРОВАНА</div>
+</div>
+
+<div id="admin-panel">
+    <button class="btn close-btn" onclick="closeAdmin()">ВЫЙТИ ИЗ ПАНЕЛИ</button>
+    <button class="btn" onclick="publish('safe')">🟢 ОТБОЙ</button>
+    <button class="btn btn-danger" onclick="publish('ballistic')">🚀 БАЛЛИСТИКА</button>
+    <button class="btn btn-danger" onclick="publish('uav')">🛸 БпЛА</button>
+    <button class="btn btn-danger" onclick="publish('missile')">🛫 РАКЕТЫ</button>
+    <button class="btn" onclick="publish('drg')">🥷 ДРГ</button>
+    <button class="btn" onclick="publish('fight')">🏙️ БОИ</button>
+</div>
+
+<script>
+    // ПАРОЛЬ ЛИДЕРА (Можете изменить на свой)
+    const LEADER_CODE = "2026";
+
+    // Настройка Firebase
+    const config = { databaseURL: "https://crystal-shield-default-rtdb.europe-west1.firebasedatabase.app" };
+    firebase.initializeApp(config);
+    const db = firebase.database().ref('current_threat');
+
+    const scenarios = {
+        safe: { b: '#001a00', c: '#0f0', i: '🛡️', h: 'БЕЗОПАСНО', d: 'ПОД ЗАЩИТОЙ АЛЬЯНСА.' },
+        ballistic: { b: '#400', c: '#f00', i: '🚀', h: 'БАЛЛИСТИКА', d: 'СРОЧНО В УКРЫТИЕ!' },
+        uav: { b: '#420', c: '#f90', i: '🛸', h: 'АТАКА БпЛА', d: 'УЙДИТЕ С УЛИЦ. РАБОТАЕТ ПВО.' },
+        missile: { b: '#400', c: '#f00', i: '🛫', h: 'РАКЕТЫ', d: 'УГРОЗА КРЫЛАТЫХ РАКЕТ.' },
+        drg: { b: '#111', c: '#fff', i: '🥷', h: 'ДИВЕРСАНТЫ', d: 'ЗАКРОЙТЕ ДВЕРИ. НМ В ПУТИ.' },
+        fight: { b: '#000', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'БЛОКИРОВКА. НЕ ВЫХОДИТЬ.' }
+    };
+
+    // Слушатель для граждан
+    db.on('value', (s) => {
+        const mode = s.val() || 'safe';
+        const data = scenarios[mode];
+        document.body.style.backgroundColor = data.b;
+        document.body.style.color = data.c;
+        document.getElementById('icon').innerText = data.i;
+        document.getElementById('title').innerText = data.h;
+        document.getElementById('desc').innerText = data.d;
+        if(mode !== 'safe' && window.navigator.vibrate) window.navigator.vibrate([300, 100, 300]);
+    });
+
+    // Функция входа для Лидера
+    function checkAccess() {
+        // Чтобы вызвать панель, нужно нажать на иконку/экран
+        const pass = prompt("ВВЕДИТЕ КОД ДОСТУПА ЛИДЕРА:");
+        if (pass === LEADER_CODE) {
+            document.getElementById('admin-panel').style.display = 'flex';
+        } else if (pass !== null) {
+            alert("ДОСТУП ЗАПРЕЩЕН. ДАННЫЕ ПЕРЕДАНЫ В ГМ.");
+        }
+    }
+
+    function closeAdmin() {
+        document.getElementById('admin-panel').style.display = 'none';
+    }
+
+    function publish(type) {
+        db.set(type);
+    }
+</script>
+</body>
+</html>
