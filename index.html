@@ -23,6 +23,20 @@
         const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
         firebase.initializeApp(config);
         const db = firebase.database().ref('current_threat');
+        // Запрос разрешения на уведомления при первом запуске
+if (Notification.permission !== 'granted') {
+    Notification.requestPermission();
+}
+
+// Функция для отправки уведомления на экран
+function sendPush(title, message) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, {
+            body: message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png' // Иконка щита
+        });
+    }
+}
 
         // СЦЕНАРИИ ТРЕВОГИ
         const scenarios = {
@@ -38,14 +52,19 @@
 
         // ФУНКЦИЯ ТРЕВОГИ (ВИБРАЦИЯ И ЗВУК)
         function triggerAlarm(mode) {
+            const cfg = scenarios[mode] || scenarios['safe'];
+            
             if (mode !== 'safe') {
-                // Вибрация: работает только если телефон поддерживает navigator.vibrate
+                // Вибрация
                 if (navigator.vibrate) {
                     navigator.vibrate([800, 300, 800, 300, 800]); 
                 }
-                // Звук: используем встроенный в браузер системный звук
+                // Звук
                 let alarm = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
-                alarm.play().catch(e => console.log("Нужно нажать на экран один раз после загрузки для активации звука"));
+                alarm.play().catch(e => console.log("Нужен клик"));
+
+                // ОТПРАВКА УВЕДОМЛЕНИЯ
+                sendPush("⚠️ ВНИМАНИЕ: ЮЖНАЯ ЗАГОРИЯ", cfg.h + " - " + cfg.d);
             }
         }
 
