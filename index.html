@@ -8,23 +8,24 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
     <style>
-        body { margin:0; font-family: sans-serif; background:#000; color:#0f0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; transition: 0.5s; overflow:hidden; }
+        body { margin:0; font-family: sans-serif; background:#000; color:#0f0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; transition: 0.5s; }
         .icon { font-size: 80px; margin-bottom: 20px; }
-        .title { font-size: 24px; font-weight: bold; text-transform: uppercase; padding: 0 10px; }
+        .title { font-size: 26px; font-weight: bold; text-transform: uppercase; }
         .desc { font-size: 16px; margin-top: 15px; opacity: 0.8; }
-        #push-info { position: absolute; bottom: 10px; font-size: 10px; opacity: 0.4; }
+        #status { position: absolute; bottom: 10px; font-size: 10px; color: #555; }
     </style>
 </head>
 <body>
     <div id="icon" class="icon">📡</div>
     <div id="title" class="title">СВЯЗЬ...</div>
-    <div id="desc" class="desc">ОЖИДАНИЕ СИГНАЛА</div>
-    <div id="push-info">Защита инициализируется...</div>
+    <div id="desc" class="desc">ОЖИДАНИЕ</div>
+    <div id="status">Инициализация системы...</div>
 
     <script>
-        const config = { 
+        const config = {
             databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/",
-            messagingSenderId: "1026779668106" 
+            messagingSenderId: "1026779668106",
+            projectId: "crystalshield-b8242"
         };
         firebase.initializeApp(config);
         const db = firebase.database().ref('current_threat');
@@ -50,16 +51,16 @@
             document.getElementById('desc').innerText = cfg.d;
         });
 
-        // Регистрация пуш-уведомлений
+        // Регистрация пушей
         if ('serviceWorker' in navigator) {
-            const messaging = firebase.messaging();
-            messaging.requestPermission()
-                .then(() => messaging.getToken())
-                .then(token => {
-                    document.getElementById('push-info').innerText = "ЩИТ АКТИВИРОВАН";
+            navigator.serviceWorker.register('firebase-messaging-sw.js')
+            .then((reg) => {
+                const messaging = firebase.messaging();
+                messaging.requestPermission().then(() => messaging.getToken()).then(token => {
+                    document.getElementById('status').innerText = "ЗАЩИТА АКТИВНА";
                     console.log("Token:", token);
-                })
-                .catch(err => { document.getElementById('push-info').innerText = "ОШИБКА УВЕДОМЛЕНИЙ"; });
+                });
+            });
         }
     </script>
 </body>
