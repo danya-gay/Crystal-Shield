@@ -6,30 +6,25 @@
     <title>RCD | КРИСТАЛЛ-ЩИТ</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
     <style>
-        body { margin:0; font-family: sans-serif; background:#000; color:#0f0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; transition: 0.5s; }
+        body { margin:0; font-family: sans-serif; background:#000; color:#0f0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; transition: 0.5s; overflow:hidden; }
         .icon { font-size: 80px; margin-bottom: 20px; }
-        .title { font-size: 26px; font-weight: bold; text-transform: uppercase; }
+        .title { font-size: 26px; font-weight: bold; text-transform: uppercase; padding: 0 10px; }
         .desc { font-size: 16px; margin-top: 15px; opacity: 0.8; }
-        #status { position: absolute; bottom: 10px; font-size: 10px; color: #555; }
     </style>
 </head>
 <body>
     <div id="icon" class="icon">📡</div>
     <div id="title" class="title">СВЯЗЬ...</div>
     <div id="desc" class="desc">ОЖИДАНИЕ</div>
-    <div id="status">Инициализация системы...</div>
 
     <script>
-        const config = {
-            databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/",
-            messagingSenderId: "1026779668106",
-            projectId: "crystalshield-b8242"
-        };
+        // КОНФИГУРАЦИЯ БАЗЫ
+        const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
         firebase.initializeApp(config);
         const db = firebase.database().ref('current_threat');
 
+        // СЦЕНАРИИ ТРЕВОГИ
         const scenarios = {
             'safe': { b: '#001a00', c: '#0f0', i: '🛡️', h: 'БЕЗОПАСНО', d: 'ПОД ЗАЩИТОЙ АЛЬЯНСА' },
             'ballistic': { b: '#400', c: '#f00', i: '🚀', h: 'БАЛЛИСТИКА', d: 'УГРОЗА БАЛЛИСТИЧЕСКИХ РАКЕТ!' },
@@ -41,27 +36,33 @@
             'street_combat': { b: '#200', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'ВНИМАНИЕ! БОЕВЫЕ ДЕЙСТВИЯ В ГОРОДЕ' }
         };
 
+        // ФУНКЦИЯ ТРЕВОГИ (ВИБРАЦИЯ И ЗВУК)
+        function triggerAlarm(mode) {
+            if (mode !== 'safe') {
+                // Вибрация: работает только если телефон поддерживает navigator.vibrate
+                if (navigator.vibrate) {
+                    navigator.vibrate([800, 300, 800, 300, 800]); 
+                }
+                // Звук: используем встроенный в браузер системный звук
+                let alarm = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
+                alarm.play().catch(e => console.log("Нужно нажать на экран один раз после загрузки для активации звука"));
+            }
+        }
+
+        // ОБРАБОТКА ИЗМЕНЕНИЙ В БАЗЕ
         db.on('value', (snapshot) => {
             const mode = snapshot.val() || 'safe';
             const cfg = scenarios[mode] || scenarios['safe'];
+            
             document.body.style.backgroundColor = cfg.b;
             document.body.style.color = cfg.c;
             document.getElementById('icon').innerText = cfg.i;
             document.getElementById('title').innerText = cfg.h;
             document.getElementById('desc').innerText = cfg.d;
-        });
 
-        // Регистрация пушей
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('firebase-messaging-sw.js')
-            .then((reg) => {
-                const messaging = firebase.messaging();
-                messaging.requestPermission().then(() => messaging.getToken()).then(token => {
-                    document.getElementById('status').innerText = "ЗАЩИТА АКТИВНА";
-                    console.log("Token:", token);
-                });
-            });
-        }
+            // Запускаем физическую тревогу
+            triggerAlarm(mode);
+        });
     </script>
 </body>
 </html>
