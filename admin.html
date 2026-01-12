@@ -2,120 +2,50 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RCD | КРИСТАЛЛ-ЩИТ</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЦУП ЛИДЕРА | RCD</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <style>
-        :root { --main-font: 'Courier New', monospace; }
-        body { margin: 0; font-family: var(--main-font); background: #000; color: #0f0; transition: background 0.5s; overflow: hidden; user-select: none; }
-        
-        /* Главный экран для граждан */
-        #display { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
-        .icon { font-size: 100px; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; }
-        .title { font-size: 28px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-        .desc { font-size: 16px; margin-top: 15px; max-width: 85%; opacity: 0.9; }
-
-        /* Панель управления Лидера */
-        #admin-panel { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: rgba(0,0,0,0.95); display: none; 
-            flex-wrap: wrap; justify-content: center; 
-            padding: 20px; border-top: 2px solid #333; z-index: 1000;
-        }
-        .btn { padding: 15px; margin: 5px; border: 1px solid #555; background: #222; color: #fff; font-family: var(--main-font); font-weight: bold; cursor: pointer; flex: 1 1 40%; }
-        .btn-danger { border-color: #f00; color: #f00; }
-        .close-btn { width: 100%; flex: 1 1 100%; background: #444; margin-bottom: 10px; }
-
-        /* Эффект помех (визуальный стиль RCD) */
-        .scanline { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.03)); z-index: 500; pointer-events: none; background-size: 100% 3px, 3px 100%; }
+        body { background:#0a0a0a; color:#eee; font-family: sans-serif; padding: 15px; text-align:center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn { padding: 20px 10px; font-size: 14px; font-weight: bold; border: 1px solid #444; cursor: pointer; border-radius: 4px; color: #fff; text-transform: uppercase; }
+        .btn-safe { background: #050; grid-column: span 2; font-size: 18px; border-color: #0f0; }
+        .btn-danger { background: #600; }
+        .btn-warning { background: #740; }
+        .btn-special { background: #333; }
     </style>
 </head>
-<body onclick="checkAccess()">
+<body id="admin-body" style="display:none;">
+    <h3 style="color:#0f0">ГЛАВНЫЙ ПУЛЬТ: ЮЖНАЯ ЗАГОРИЯ</h3>
+    <div class="grid">
+        <button class="btn btn-safe" onclick="send('safe')">🛡️ ОТБОЙ</button>
+        <button class="btn btn-danger" onclick="send('ballistic')">🚀 БАЛЛИСТИКА</button>
+        <button class="btn btn-danger" onclick="send('cruise')">🛫 КР. РАКЕТЫ</button>
+        <button class="btn btn-warning" onclick="send('uav')">🛸 БпЛА</button>
+        <button class="btn btn-warning" onclick="send('kab')">💣 КАБ / ФАБ</button>
+        <button class="btn btn-danger" onclick="send('artillery')">💥 ОБСТРЕЛ</button>
+        <button class="btn btn-special" onclick="send('drg')">🥷 ДРГ</button>
+        <button class="btn btn-special" onclick="send('street_combat')" style="grid-column: span 2;">☠️ УЛИЧНЫЕ БОИ</button>
+    </div>
 
-<div class="scanline"></div>
-
-<div id="display">
-    <div id="icon" class="icon">📡</div>
-    <div id="title" class="title">ПОДКЛЮЧЕНИЕ К ЭФИРУ...</div>
-    <div id="desc" class="desc">ОЖИДАНИЕ СИГНАЛА ОТ ОКТАГОН-ID</div>
-</div>
-
-<div id="admin-panel">
-    <button class="btn close-btn" onclick="event.stopPropagation(); closeAdmin();">ЗАКРЫТЬ ПУЛЬТ</button>
-    <button class="btn" onclick="event.stopPropagation(); publish('safe')">🟢 ОТБОЙ</button>
-    <button class="btn btn-danger" onclick="event.stopPropagation(); publish('ballistic')">🚀 БАЛЛИСТИКА</button>
-    <button class="btn btn-danger" onclick="event.stopPropagation(); publish('uav')">🛸 БпЛА</button>
-    <button class="btn btn-danger" onclick="event.stopPropagation(); publish('missile')">🛫 РАКЕТЫ</button>
-    <button class="btn" onclick="event.stopPropagation(); publish('drg')">🥷 ДРГ</button>
-    <button class="btn" onclick="event.stopPropagation(); publish('street')">🏙️ БОИ</button>
-</div>
-
-<script>
-    // --- НАСТРОЙКА ЛИДЕРА ---
-    const LEADER_CODE = "ЮТРКЧАГБ"; 
-    // ВСТАВЬТЕ ВАШУ ССЫЛКУ НИЖЕ
-    const DB_URL = "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/";
-
-    // Инициализация Firebase
-    const app = firebase.initializeApp({ databaseURL: DB_URL });
-    const db = firebase.database().ref('current_threat');
-
-    const scenarios = {
-        safe: { b: '#001a00', c: '#0f0', i: '🛡️', h: 'БЕЗОПАСНО', d: 'ТЕРРИТОРИЯ ПОД ЗАЩИТОЙ АЛЬЯНСА.' },
-        ballistic: { b: '#400', c: '#f00', i: '🚀', h: 'БАЛЛИСТИКА', d: 'УГРОЗА УДАРА! СРОЧНО В УКРЫТИЕ!' },
-        uav: { b: '#420', c: '#f90', i: '🛸', h: 'АТАКА БпЛА', d: 'РАБОТАЕТ ПВО. ОТОЙДИТЕ ОТ ОКНО.' },
-        missile: { b: '#400', c: '#f00', i: '🛫', h: 'РАКЕТЫ', d: 'ПУСК КРЫЛАТЫХ РАКЕТ. В УКРЫТИЕ!' },
-        drg: { b: '#111', c: '#fff', i: '🥷', h: 'ДИВЕРСАНТЫ', d: 'ВРАГ В ГОРОДЕ. ЗАКРОЙТЕ ДВЕРИ.' },
-        street: { b: '#000', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'КРАСНАЯ ЗОНА. НЕ ВЫХОДИТЬ.' }
-    };
-
-    // Слушатель эфира (для граждан)
-    db.on('value', (snapshot) => {
-        const mode = snapshot.val();
-        if (!mode) {
-            // Если в базе пусто, создаем первый статус
-            db.set('safe');
-            return;
+    <script>
+        const pass = prompt("КОД ЛИДЕРА:");
+        if(pass === "ЮТРКЧАГБ") { 
+            document.getElementById('admin-body').style.display = 'block';
+        } else {
+            window.location.href = "index.html";
         }
-        applyStatus(mode);
-    });
 
-    function applyStatus(mode) {
-        const s = scenarios[mode] || scenarios.safe;
-        document.body.style.backgroundColor = s.b;
-        document.body.style.color = s.c;
-        document.getElementById('icon').innerText = s.i;
-        document.getElementById('title').innerText = s.h;
-        document.getElementById('desc').innerText = s.d;
-        
-        if(mode !== 'safe' && window.navigator.vibrate) window.navigator.vibrate([400, 200, 400]);
-    }
+        const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
+        firebase.initializeApp(config);
+        const db = firebase.database().ref('current_threat');
 
-    // Управление для Лидера
-    function checkAccess() {
-        const pass = prompt("ВВЕДИТЕ КОД ДОСТУПА ЛИДЕРА:");
-        if (pass === LEADER_CODE) {
-            document.getElementById('admin-panel').style.display = 'flex';
-        } else if (pass !== null) {
-            alert("ОШИБКА ДОСТУПА.");
+        function send(type) {
+            db.set(type)
+                .then(() => { console.log("Статус отправлен: " + type); })
+                .catch((err) => { alert("ОШИБКА СВЯЗИ: " + err); });
         }
-    }
-
-    function closeAdmin() {
-        document.getElementById('admin-panel').style.display = 'none';
-    }
-
-    function publish(type) {
-        db.set(type).then(() => {
-            console.log("Приказ передан");
-        }).catch(e => {
-            alert("ОШИБКА СВЯЗИ: Проверьте вкладку RULES в Firebase!");
-        });
-        closeAdmin();
-    }
-</script>
+    </script>
 </body>
 </html>
