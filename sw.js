@@ -1,4 +1,7 @@
-self.addEventListener('push', function(event) {
-    // Для будущих облачных пушей
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
 });
 
+self.addEventListener('activate', (event) => {
+    event.waitUntil(clients.claim());
+});
