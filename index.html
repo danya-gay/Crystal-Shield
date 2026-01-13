@@ -57,19 +57,33 @@ if ('serviceWorker' in navigator) {
 }
 
 // 2. Обновленная функция отправки пуша
-function sendPush(cfg) {
-    if (Notification.permission === 'granted') {
-        // Пытаемся отправить через Service Worker (так надежнее)
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification(`ВНИМАНИЕ: ${cfg.h}`, {
-                body: cfg.d,
-                icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-                vibrate: [500, 100, 500],
-                tag: 'alert' // Чтобы уведомления не плодились, а заменяли друг друга
-            });
-        });
+async function sendPush(cfg) {
+    // Проверяем, разрешил ли пользователь уведомления
+    if (Notification.permission !== 'granted') {
+        console.log("Доступ к уведомлениям не получен");
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Опции уведомления
+        const options = {
+            body: cfg.d,
+            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+            vibrate: [500, 200, 500],
+            tag: 'alert-system', // Заменяет старое уведомление новым
+            renotify: true,      // Заставляет телефон вибрировать при замене
+            requireInteraction: true // Уведомление не исчезнет, пока не смахнешь
+        };
+
+        await registration.showNotification(`ВНИМАНИЕ: ${cfg.h}`, options);
+        console.log("Пуш отправлен успешно");
+    } catch (error) {
+        console.error("Ошибка отправки пуша:", error);
     }
 }
+
 
 
         function triggerAlarm(mode, cfg) {
