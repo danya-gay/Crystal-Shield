@@ -49,14 +49,28 @@
         };
 
         // 2. Функция отправки пуша
-        function sendPush(cfg) {
-            if (Notification.permission === 'granted') {
-                new Notification(`ВНИМАНИЕ: ${cfg.h}`, {
-                    body: cfg.d,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png' // Можно заменить на свою иконку
-                });
-            }
-        }
+        // 1. Регистрация Service Worker при загрузке
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(() => {
+        console.log('Service Worker зарегистрирован');
+    });
+}
+
+// 2. Обновленная функция отправки пуша
+function sendPush(cfg) {
+    if (Notification.permission === 'granted') {
+        // Пытаемся отправить через Service Worker (так надежнее)
+        navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(`ВНИМАНИЕ: ${cfg.h}`, {
+                body: cfg.d,
+                icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                vibrate: [500, 100, 500],
+                tag: 'alert' // Чтобы уведомления не плодились, а заменяли друг друга
+            });
+        });
+    }
+}
+
 
         function triggerAlarm(mode, cfg) {
             if (mode !== 'safe') {
