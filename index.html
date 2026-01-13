@@ -81,37 +81,53 @@
         }
 
         // Слушаем базу
+                // Слушаем базу
         db.on('value', (snapshot) => {
             const mode = snapshot.val() || 'safe';
             const cfg = scenarios[mode] || scenarios['safe'];
             
-            // 1. Обновляем визуал (работает всегда при входе)
+            // Обновляем визуал (работает всегда при входе)
             document.body.style.backgroundColor = cfg.b;
             document.body.style.color = cfg.c;
             document.getElementById('icon').innerText = cfg.i;
             document.getElementById('title').innerText = cfg.h;
             document.getElementById('desc').innerText = cfg.d;
 
-            // 2. Логика уведомлений
             if (isFirstLoad) {
-                // При первой загрузке просто запоминаем статус, не пугаем пользователя
                 lastStatus = mode;
                 isFirstLoad = false;
-            } else {
-                // Если статус реально изменился
-                if (mode !== lastStatus) {
-                    triggerAlarm(mode, cfg);
-                    lastStatus = mode;
-                }
+            } else if (mode !== lastStatus) {
+                triggerAlarm(mode, cfg);
+                lastStatus = mode;
             }
         });
 
-        // АНТИ-СОН: Каждые 30 секунд "пинаем" базу, чтобы соединение не закрылось
-        // Правильный АНТИ-СОН: пишем в отдельную папку 'heartbeat', не трогая 'current_threat'
-const aliveRef = firebase.database().ref('heartbeat'); 
-setInterval(() => {
-    aliveRef.set(Date.now());
-}, 30000);
+        // --- УСИЛИТЕЛЬ ДЛЯ ФОНОВОЙ РАБОТЫ ---
+
+        // 1. Принудительное переподключение при потере связи
+        firebase.database().ref(".info/connected").on("value", (snap) => {
+            if (snap.val() === false) {
+                // Если связь пропала, пробуем переподключиться вручную
+                firebase.database().goOnline();
+            }
+        });
+
+        // 2. Heartbeat в отдельную папку (чтобы не сбрасывать статус)
+        const aliveRef = firebase.database().ref('heartbeat'); 
+        setInterval(() => {
+            // Пишем в базу, только если вкладка скрыта (чтобы "будить" Chrome)
+            if (document.visibilityState === 'hidden') {
+                aliveRef.set(firebase.database.ServerValue.TIMESTAMP);
+            }
+        }, 20000); // Раз в 20 секунд - это оптимально для Android
+
+        // 3. Авто-обновление при возврате в браузер
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // Если мы вернулись в приложение, проверяем актуальность данных
+                firebase.database().goOnline();
+            }
+        });
 
     </script>
 </body>
