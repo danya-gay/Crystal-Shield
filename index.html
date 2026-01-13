@@ -107,9 +107,12 @@
         });
 
         // АНТИ-СОН: Каждые 30 секунд "пинаем" базу, чтобы соединение не закрылось
-        setInterval(() => {
-            db.child('keep_alive').set(Date.now());
-        }, 30000);
+        // Правильный АНТИ-СОН: пишем в отдельную папку 'heartbeat', не трогая 'current_threat'
+const aliveRef = firebase.database().ref('heartbeat'); 
+setInterval(() => {
+    aliveRef.set(Date.now());
+}, 30000);
+
     </script>
 </body>
 </html>
