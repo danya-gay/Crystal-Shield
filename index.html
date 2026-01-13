@@ -21,6 +21,10 @@
     <div id="desc" class="desc">ОЖИДАНИЕ</div>
     <button id="auth-btn">ВКЛЮЧИТЬ ЗАЩИТУ</button>
 
+    <audio id="silence-loop" loop>
+    <source src="https://raw.githubusercontent.com/anars/blank-audio/master/10-seconds-of-silence.mp3" type="audio/mp3">
+</audio>
+
     <script>
         const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
         firebase.initializeApp(config);
@@ -45,16 +49,20 @@
         }
 
         document.getElementById('auth-btn').onclick = function() {
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') {
-                    this.style.display = 'none';
-                    // Принудительно запускаем аудио-контекст, чтобы звуки работали позже
-                    const silentAudio = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
-                    silentAudio.volume = 0;
-                    silentAudio.play().catch(() => {});
-                }
-            });
-        };
+    Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+            this.style.display = 'none';
+            
+            // ЗАПУСК ТИШИНЫ (Держит вкладку живой)
+            const loop = document.getElementById('silence-loop');
+            loop.play().catch(e => console.log("Ошибка автоплея тишины:", e));
+
+            // Тестовый пуш
+            sendPush(scenarios['safe']);
+        }
+    });
+};
+
 
         async function sendPush(cfg) {
             if (Notification.permission === 'granted') {
