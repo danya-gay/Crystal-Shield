@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCD | КРИСТАЛЛ-ЩИТ</title>
+    <link rel="manifest" href="manifest.json">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -11,14 +12,14 @@
         .icon { font-size: 80px; margin-bottom: 20px; }
         .title { font-size: 26px; font-weight: bold; text-transform: uppercase; padding: 0 10px; }
         .desc { font-size: 16px; margin-top: 15px; opacity: 0.8; }
-        #auth-btn { margin-top: 20px; padding: 10px 20px; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
+        #auth-btn { margin-top: 30px; padding: 15px 30px; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; box-shadow: 0 0 15px #0f0; z-index: 100; }
     </style>
 </head>
 <body>
     <div id="icon" class="icon">📡</div>
     <div id="title" class="title">СВЯЗЬ...</div>
     <div id="desc" class="desc">ОЖИДАНИЕ</div>
-    <button id="auth-btn">ВКЛЮЧИТЬ МОНИТОРИНГ</button>
+    <button id="auth-btn">ВКЛЮЧИТЬ ЗАЩИТУ</button>
 
     <script>
         const config = { databaseURL: "https://crystalshield-b8242-default-rtdb.europe-west1.firebasedatabase.app/" };
@@ -36,82 +37,79 @@
             'street_combat': { b: '#200', c: '#fff', i: '☠️', h: 'УЛИЧНЫЕ БОИ', d: 'ВНИМАНИЕ! БОЕВЫЕ ДЕЙСТВИЯ В ГОРОДЕ' }
         };
 
-        let lastStatus = 'safe';
+        let lastStatus = null;
+        let isFirstLoad = true;
 
-        // 1. Запрос прав на уведомления
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
         document.getElementById('auth-btn').onclick = function() {
             Notification.requestPermission().then(perm => {
                 if (perm === 'granted') {
                     this.style.display = 'none';
-                    new Notification("Система активирована", { body: "Вы будете получать уведомления об угрозах" });
+                    // Принудительно запускаем аудио-контекст, чтобы звуки работали позже
+                    const silentAudio = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
+                    silentAudio.volume = 0;
+                    silentAudio.play().catch(() => {});
                 }
             });
         };
 
-        // 2. Функция отправки пуша
-        // 1. Регистрация Service Worker при загрузке
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(() => {
-        console.log('Service Worker зарегистрирован');
-    });
-}
-
-// 2. Обновленная функция отправки пуша
-async function sendPush(cfg) {
-    // Проверяем, разрешил ли пользователь уведомления
-    if (Notification.permission !== 'granted') {
-        console.log("Доступ к уведомлениям не получен");
-        return;
-    }
-
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        
-        // Опции уведомления
-        const options = {
-            body: cfg.d,
-            icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
-            vibrate: [500, 200, 500],
-            tag: 'alert-system', // Заменяет старое уведомление новым
-            renotify: true,      // Заставляет телефон вибрировать при замене
-            requireInteraction: true // Уведомление не исчезнет, пока не смахнешь
-        };
-
-        await registration.showNotification(`ВНИМАНИЕ: ${cfg.h}`, options);
-        console.log("Пуш отправлен успешно");
-    } catch (error) {
-        console.error("Ошибка отправки пуша:", error);
-    }
-}
-
-
-
-        function triggerAlarm(mode, cfg) {
-            if (mode !== 'safe') {
-                if (navigator.vibrate) navigator.vibrate([800, 300, 800, 300, 800]); 
-                let alarm = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
-                alarm.play().catch(e => console.log("Нажмите на экран для активации звука"));
-                
-                // Отправляем пуш
-                sendPush(cfg);
+        async function sendPush(cfg) {
+            if (Notification.permission === 'granted') {
+                const reg = await navigator.serviceWorker.ready;
+                reg.showNotification(`СИСТЕМА ЩИТ: ${cfg.h}`, {
+                    body: cfg.d,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                    vibrate: [500, 100, 500],
+                    tag: 'rcd-alert',
+                    renotify: true
+                });
             }
         }
 
+        function triggerAlarm(mode, cfg) {
+            // Уведомление теперь шлем ВСЕГДА (и для safe тоже)
+            sendPush(cfg);
+
+            if (mode !== 'safe') {
+                if (navigator.vibrate) navigator.vibrate([800, 300, 800]);
+                let alarm = new Audio('https://actions.google.com/sounds/v1/alarms/emergency_it_is_drastic.ogg');
+                alarm.play().catch(() => console.log("Звук заблокирован, нужен клик"));
+            }
+        }
+
+        // Слушаем базу
         db.on('value', (snapshot) => {
             const mode = snapshot.val() || 'safe';
-            if (mode === lastStatus) return; // Не дублировать, если статус не менялся
-
             const cfg = scenarios[mode] || scenarios['safe'];
             
+            // 1. Обновляем визуал (работает всегда при входе)
             document.body.style.backgroundColor = cfg.b;
             document.body.style.color = cfg.c;
             document.getElementById('icon').innerText = cfg.i;
             document.getElementById('title').innerText = cfg.h;
             document.getElementById('desc').innerText = cfg.d;
 
-            triggerAlarm(mode, cfg);
-            lastStatus = mode;
+            // 2. Логика уведомлений
+            if (isFirstLoad) {
+                // При первой загрузке просто запоминаем статус, не пугаем пользователя
+                lastStatus = mode;
+                isFirstLoad = false;
+            } else {
+                // Если статус реально изменился
+                if (mode !== lastStatus) {
+                    triggerAlarm(mode, cfg);
+                    lastStatus = mode;
+                }
+            }
         });
+
+        // АНТИ-СОН: Каждые 30 секунд "пинаем" базу, чтобы соединение не закрылось
+        setInterval(() => {
+            db.child('keep_alive').set(Date.now());
+        }, 30000);
     </script>
 </body>
 </html>
