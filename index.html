@@ -45,7 +45,11 @@
         let isFirstLoad = true;
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+    navigator.serviceWorker.register('sw.js', { scope: '/' }).then((reg) => {
+        // Принудительно обновляем службу при каждом входе
+        reg.update();
+        console.log('КРИСТАЛЛ-ЩИТ: АВТОНОМНЫЙ РЕЖИМ АКТИВИРОВАН');
+    });
         }
 
         document.getElementById('auth-btn').onclick = function() {
