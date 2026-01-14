@@ -161,6 +161,37 @@ requestWakeLock();
             }
         });
 
+        const TG_TOKEN = '8463822717:AAFex03dAwSH1ZDBbfl_8hYQBEOfZ9OetLg';
+const TG_CHAT_ID = '6456430138';
+
+// Функция отправки
+async function sendAlert(text) {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'HTML' })
+    });
+}
+
+// Слушатель базы (теперь автономный)
+db.on('value', (snapshot) => {
+    const mode = snapshot.val();
+    const alerts = {
+        'safe': '✅ <b>СИСТЕМА ЩИТ:</b> Режим ожидания. Статус: БЕЗОПАСНО.',
+        'ballistic': '🚀 <b>ТРЕВОГА:</b> Зафиксирован пуск баллистических ракет! Срочно в укрытие!',
+        'cruise': '🛫 <b>ТРЕВОГА:</b> Угроза крылатых ракет!',
+        'uav': '🛸 <b>ВНИМАНИЕ:</b> Угроза ударных БпЛА.',
+        'kab': '💣 <b>ВНИМАНИЕ:</b> Угроза авиационных бомб (КАБ).',
+        'artillery': '💥 <b>ОБСТРЕЛ:</b> Работает вражеская артиллерия!',
+        'drg': '🥷 <b>ОПАСНОСТЬ:</b> Активность ДРГ в секторе.',
+        'street_combat': '☠️ <b>КРИТИЧЕСКИЙ УРОВЕНЬ:</b> Уличные бои!'
+    };
+
+    if (mode && mode !== 'safe' && alerts[mode]) {
+        sendAlert(alerts[mode]);
+    }
+});
+
     </script>
 </body>
 </html>
