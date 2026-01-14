@@ -44,6 +44,22 @@
         let lastStatus = null;
         let isFirstLoad = true;
 
+// Функция-шлюз для мгновенной отправки в Telegram через Make
+async function sendToTelegramBridge(mode) {
+    const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/l5wx58qh4pb5jmu3dkt2azduef11io5o"; 
+    
+    try {
+        await fetch(MAKE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ "threat": mode }) // Отправляем статус
+        });
+        console.log("Сигнал в ТГ-шлюз отправлен");
+    } catch (e) {
+        console.error("Ошибка шлюза:", e);
+    }
+}
+        
         if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js', { scope: '/' }).then((reg) => {
         // Принудительно обновляем службу при каждом входе
