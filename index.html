@@ -52,6 +52,26 @@
     });
         }
 
+// Запрашиваем WakeLock, чтобы процессор не засыпал
+let wakeLock = null;
+const requestWakeLock = async () => {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('ЩИТ: Питание заблокировано (процессор не уснет)');
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+};
+
+// Перезапрашиваем WakeLock, если он сорвался
+document.addEventListener('visibilitychange', () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+});
+
+requestWakeLock();
+        
         document.getElementById('auth-btn').onclick = function() {
     Notification.requestPermission().then(perm => {
         if (perm === 'granted') {
