@@ -45,3 +45,17 @@ db.on('value', (snapshot) => {
 // Установка и активация
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', () => self.clients.claim());
+
+// Каждые 30 секунд проверяем состояние связи
+self.addEventListener('periodicsync', (event) => {
+    if (event.tag === 'check-threat') {
+        firebase.database().goOnline();
+    }
+});
+
+// Если соединение закрылось, принудительно открываем его
+firebase.database().ref(".info/connected").on("value", (snap) => {
+    if (snap.val() === false) {
+        firebase.database().goOnline();
+    }
+});
